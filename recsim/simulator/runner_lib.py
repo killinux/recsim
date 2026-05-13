@@ -24,7 +24,7 @@ import time
 
 from absl import flags
 from dopamine.discrete_domains import checkpointer
-import gin.tf
+import gin
 from gym import spaces
 import numpy as np
 from recsim.simulator import environment

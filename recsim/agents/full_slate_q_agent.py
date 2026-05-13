@@ -16,7 +16,7 @@
 """Agent that implements the Slate-Q algorithms."""
 
 import itertools
-import gin.tf
+import gin
 from gym import spaces
 from recsim import agent as abstract_agent
 from recsim.agents.dopamine import dqn_agent

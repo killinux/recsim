@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Agent that implements the Slate-Q algorithms."""
-import gin.tf
+import gin
 import numpy as np
 from recsim import agent as abstract_agent
 from recsim import choice_model

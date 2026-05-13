@@ -22,7 +22,7 @@ import collections
 
 from dopamine.agents.dqn import dqn_agent
 from dopamine.replay_memory import circular_replay_buffer
-import gin.tf
+import gin
 from gym import spaces
 import numpy as np
 import tensorflow.compat.v1 as tf
