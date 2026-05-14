@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RecSim 核心概念词典</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:#1a1a2e;background:#f0f2f5;padding:12px}
+.container{max-width:1100px;margin:0 auto}
+h1{font-size:20px;text-align:center;padding:14px 0 4px;color:#16213e}
+.subtitle{text-align:center;font-size:12px;color:#888;margin-bottom:14px}
+.subtitle a{color:#4a7cf6;text-decoration:none}
+.nav{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-bottom:14px;position:sticky;top:0;background:#f0f2f5;padding:6px 0;z-index:10}
+.nav a{font-size:11px;padding:3px 8px;background:#fff;border:1px solid #ddd;border-radius:3px;color:#333;text-decoration:none;white-space:nowrap}
+.nav a:hover{background:#4a7cf6;color:#fff;border-color:#4a7cf6}
+.section{background:#fff;border-radius:6px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow:hidden}
+.section-title{font-size:14px;font-weight:700;padding:8px 14px;background:linear-gradient(135deg,#16213e,#1a1a4e);color:#fff;cursor:pointer;display:flex;align-items:center;gap:8px}
+.section-title .icon{font-size:16px}
+.section-body{padding:0 14px 10px}
+.term{border-bottom:1px solid #f0f0f0;padding:8px 0}
+.term:last-child{border-bottom:none}
+.term-name{font-weight:700;color:#16213e;font-size:13px;display:inline}
+.term-en{font-size:11px;color:#888;margin-left:4px}
+.term-desc{margin-top:2px;font-size:13px;color:#444;line-height:1.55}
+.term-desc code{background:#f4f4f8;padding:1px 5px;border-radius:3px;font-size:12px;color:#c41a4a;font-family:Menlo,Monaco,Consolas,monospace}
+pre{background:#1a1a2e;color:#e8e8e8;padding:8px 10px;border-radius:4px;font-size:11.5px;line-height:1.5;overflow-x:auto;margin:4px 0}
+pre .cmt{color:#6a9955}
+pre .kw{color:#c586c0}
+pre .val{color:#b5cea8}
+pre .str{color:#ce9178}
+table{width:100%;border-collapse:collapse;margin:6px 0;font-size:12px}
+th{background:#f4f4f8;padding:4px 8px;text-align:left;font-weight:600;border:1px solid #e0e0e0}
+td{padding:4px 8px;border:1px solid #e0e0e0}
+tr:nth-child(even){background:#fafafa}
+.highlight{background:#fffde7;border-left:3px solid #ffc107;padding:6px 10px;margin:4px 0;border-radius:0 4px 4px 0;font-size:12px}
+.tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:2px;margin-left:6px;font-weight:400}
+.tag-lts{background:#e3f2fd;color:#1565c0}
+.tag-ie{background:#e8f5e9;color:#2e7d32}
+.tag-iex{background:#fff3e0;color:#e65100}
+.tag-all{background:#f3e5f5;color:#7b1fa2}
+.formula{background:#f8f8ff;border:1px solid #e8e8f0;border-radius:4px;padding:6px 10px;margin:4px 0;font-family:Menlo,Monaco,monospace;font-size:12px;text-align:center;color:#333}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>RecSim 核心概念词典</h1>
+<p class="subtitle">论文: <a href="https://arxiv.org/abs/1909.04847" target="_blank">RecSim: A Configurable Simulation Platform for Recommender Systems</a> (Google Research, 2019)</p>
+
+<div class="nav">
+<a href="#sec1">RL 基础</a>
+<a href="#sec2">推荐系统</a>
+<a href="#sec3">RecSim 架构</a>
+<a href="#sec4">用户建模</a>
+<a href="#sec5">选择模型</a>
+<a href="#sec6">LTS 环境</a>
+<a href="#sec7">Interest Evolution</a>
+<a href="#sec8">Interest Exploration</a>
+<a href="#sec9">Agent 算法</a>
+<a href="#sec10">外部工具</a>
+</div>
+
+<!-- ============ 1. RL 基础 ============ -->
+<div class="section" id="sec1">
+<div class="section-title"><span class="icon">🎯</span>1. 强化学习基础概念</div>
+<div class="section-body">
+
+<div class="term">
+<div class="term-name">MDP<span class="term-en">Markov Decision Process</span></div>
+<div class="term-desc">RL 的数学框架。每个时间步：Agent 观察状态 → 选择动作 → 获得奖励 → 转移到新状态。RecSim 中：用户状态=state，推荐 slate=action，用户反馈=reward。</div>
+</div>
+
+<div class="term">
+<div class="term-name">POMDP<span class="term-en">Partially Observable MDP</span></div>
+<div class="term-desc">Agent <strong>看不到</strong>完整状态，只能看到部分观测。RecSim 的核心设计——LTS 中 Agent 看不到 satisfaction，IEx 中看不到用户兴趣细节。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Episode<span class="term-en">回合</span></div>
+<div class="term-desc">一次完整的用户会话。从用户进入系统到离开（<code>time_budget ≤ 0</code>），期间 Agent 与环境反复交互。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Reward<span class="term-en">奖励</span></div>
+<div class="term-desc">Agent 每步获得的即时反馈。不同环境定义不同：LTS=engagement，IE=watched_time，IEx=是否点击(0/1)。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Discount Factor (γ)<span class="term-en">折扣因子</span></div>
+<div class="term-desc">衡量对未来奖励的重视程度。γ=0 只看当下（贪心），γ=0.99 近乎同等重视未来。推荐系统需要高 γ 做长期规划。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Exploration vs Exploitation<span class="term-en">探索 vs 利用</span></div>
+<div class="term-desc"><strong>探索</strong>：尝试不确定的选项以获取信息。<strong>利用</strong>：选已知最好的选项。IEx 环境专门考察此权衡。</div>
+</div>
+
+</div></div>
+
+<!-- ============ 2. 推荐系统 ============ -->
+<div class="section" id="sec2">
+<div class="section-title"><span class="icon">📋</span>2. 推荐系统特有概念</div>
+<div class="section-body">
+
+<div class="term">
+<div class="term-name">Slate<span class="term-en">推荐列表</span></div>
+<div class="term-desc">一次推荐给用户的一组文档，是 Agent 的"动作"。代码中为整数索引数组：<code>action = np.array([0, 3, 7])</code>，从候选集中选第 0、3、7 个文档。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Combinatorial Action Space<span class="term-en">组合动作空间</span></div>
+<div class="term-desc">从 N 个候选选 K 个组成 slate，动作空间 = C(N,K)。如 N=100, K=5 有 7500 万种组合。SlateDecompQ 将复杂度从 O(C(N,K)) 降为 O(N)。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Dynamic Candidate Set<span class="term-en">动态候选集</span></div>
+<div class="term-desc">候选内容池不断变化——新内容上线、旧内容下架。<code>resample_documents=True</code> 模拟此动态性。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Clickbait<span class="term-en">标题党</span></div>
+<div class="term-desc">高即时吸引力但低实质价值的内容。LTS 环境中用 <code>clickbait_score ∈ [0,1]</code> 量化，越高越"标题党"。</div>
+</div>
+
+<div class="term">
+<div class="term-name">CTR / pCTR<span class="term-en">点击率 / 预测点击率</span></div>
+<div class="term-desc">Click-Through Rate。<code>GreedyPCTRAgent</code> 只按预测点击率排序推荐，不考虑长期影响，是短视基线。</div>
+</div>
+
+</div></div>
+
+<!-- ============ 3. RecSim 架构 ============ -->
+<div class="section" id="sec3">
+<div class="section-title"><span class="icon">🏗️</span>3. RecSim 架构概念</div>
+<div class="section-body">
+
+<div class="term">
+<div class="term-name">Environment<span class="term-en">环境 · <code>simulator/environment.py</code></span></div>
+<div class="term-desc">仿真核心。编排每步交互：接收 slate → 模拟用户响应 → 更新状态 → 返回观测和奖励。核心类 <code>SingleUserEnvironment</code>。</div>
+</div>
+
+<div class="term">
+<div class="term-name">User Model<span class="term-en">用户模型 · <code>user.py</code></span></div>
+<div class="term-desc">封装用户完整行为：状态管理 + 响应生成 + 状态转移 + 终止判断。核心类 <code>AbstractUserModel</code>。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Document Sampler<span class="term-en">文档采样器 · <code>document.py</code></span></div>
+<div class="term-desc">生成候选文档集 <code>CandidateSet</code>。每步可重新采样模拟动态内容池。</div>
+</div>
+
+<div class="term">
+<div class="term-name">RecSimGymEnv<span class="term-en">Gym 封装 · <code>simulator/recsim_gym.py</code></span></div>
+<div class="term-desc">将 RecSim 环境包装为 OpenAI Gym 接口（<code>reset()</code>、<code>step()</code>），可接入任何标准 RL 库。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Reward Aggregator<span class="term-en">奖励聚合函数</span></div>
+<div class="term-desc">将多维用户响应（点击、时长、喜欢等）压缩为标量 reward。如 <code>clicked_watchtime_reward</code>、<code>clicked_engagement_reward</code>。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Gin Config<span class="term-en">配置系统</span></div>
+<div class="term-desc">Google 超参数配置框架。<code>@gin.configurable</code> 标记可配置类，命令行即可调参：<code>--gin_bindings="Class.param=value"</code></div>
+</div>
+
+<div class="highlight">
+<strong>交互循环</strong>：reset() → Agent 出 slate → Environment.step(slate) → simulate_response → update_state → 返回 (obs, reward, done)
+</div>
+
+</div></div>
+
+<!-- ============ 4. 用户建模 ============ -->
+<div class="section" id="sec4">
+<div class="section-title"><span class="icon">👤</span>4. 用户建模概念</div>
+<div class="section-body">
+
+<div class="term">
+<div class="term-name">User State<span class="term-en">用户状态</span></div>
+<div class="term-desc">用户某时刻的完整内部状态。含<strong>隐变量</strong>（兴趣/满意度，Agent 看不到）和<strong>可观测变量</strong>（人口统计等）。<code>create_observation()</code> 决定暴露哪些。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Partial Observability<span class="term-en">部分可观测性</span></div>
+<div class="term-desc">
+<table>
+<tr><th>环境</th><th>Agent 能看到</th><th>Agent 看不到</th></tr>
+<tr><td>LTS</td><td>空（什么都看不到）</td><td>satisfaction, NPE</td></tr>
+<tr><td>IE</td><td>用户兴趣向量</td><td>—</td></tr>
+<tr><td>IEx</td><td>用户类型 ID</td><td>对各主题的具体偏好</td></tr>
+</table>
+</div>
+</div>
+
+<div class="term">
+<div class="term-name">Response<span class="term-en">用户响应</span></div>
+<div class="term-desc">用户对推荐文档的反馈。IE: clicked/watch_time/liked/quality/cluster_id；LTS: clicked/engagement；IEx: clicked。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Time Budget<span class="term-en">时间预算</span></div>
+<div class="term-desc">用户 session 剩余时间。每步消耗（看视频耗时），高质量推荐可补回一些。耗尽则 episode 结束。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Score Function<span class="term-en">评分函数</span></div>
+<div class="term-desc">用户对文档的偏好分数，通常为兴趣向量与文档特征的点积：</div>
+<div class="formula">score = user_interests · doc_features</div>
+</div>
+
+</div></div>
+
+<!-- ============ 5. 选择模型 ============ -->
+<div class="section" id="sec5">
+<div class="section-title"><span class="icon">🎲</span>5. 选择模型概念</div>
+<div class="section-body">
+
+<div class="term">
+<div class="term-name">Multinomial Logit<span class="term-en">多项式 Logit · <code>choice_model.py</code></span><span class="tag tag-iex">IEx</span></div>
+<div class="term-desc">对分数做 softmax 采样。score 越高选中概率越大，但低分文档仍有机会。</div>
+<div class="formula">P(x) = exp(score(x)) / Σ<sub>y</sub> exp(score(y))</div>
+</div>
+
+<div class="term">
+<div class="term-name">Cascade Model<span class="term-en">级联模型</span><span class="tag tag-ie">IE</span></div>
+<div class="term-desc">用户从上到下依次浏览 slate：看第 1 个 → 以概率 p₁ 点击(点了就停) → 没点 → 以 <code>attention_prob</code> 的概率继续看第 2 个 → …。位置越靠后被浏览到的概率越低，模拟<strong>位置偏差</strong>。</div>
+</div>
+
+<div class="term">
+<div class="term-name">No-Click Mass<span class="term-en">不点击质量</span></div>
+<div class="term-desc">用户"什么都不点"的倾向。值越高越容易划过整个 slate 不点。类比：用户看了推荐页觉得都不感兴趣，直接关 app。</div>
+</div>
+
+</div></div>
+
+<!-- ============ 6. LTS ============ -->
+<div class="section" id="sec6">
+<div class="section-title"><span class="icon">🍫</span>6. Long-Term Satisfaction 环境</div>
+<div class="section-body">
+
+<div class="highlight">核心困境：巧克力(clickbait)短期好吃但不健康，甘蓝(优质内容)短期没那么诱人但有长期价值。好的策略要像营养师一样搭配。</div>
+
+<div class="term">
+<div class="term-name">NPE<span class="term-en">Net Positive Exposure · 净正面曝光</span></div>
+<div class="term-desc">核心隐变量。衡量用户累计接收内容质量的"计分器"。推优质内容 NPE 上升，推 clickbait NPE 下降。</div>
+<div class="formula">NPE<sub>t+1</sub> = γ · NPE<sub>t</sub> − 2·(clickbait_score − 0.5) + ε,&nbsp;&nbsp;ε ~ N(0, σ²)</div>
+<div class="term-desc" style="margin-top:4px">
+<code>γ·NPE_t</code> 遗忘效应(γ=0.7) &nbsp;|&nbsp; clickbait>0.5 → NPE 下降 &nbsp;|&nbsp; clickbait<0.5 → NPE 上升 &nbsp;|&nbsp; ε 为情绪随机波动
+</div>
+</div>
+
+<div class="term">
+<div class="term-name">Satisfaction<span class="term-en">满意度（隐变量）</span></div>
+<div class="term-desc">从 NPE 推导，取值 (0,1)。NPE 高→满意度接近 1→用户活跃；NPE 低→满意度接近 0→推什么都没人看。</div>
+<div class="formula">satisfaction = 1 / (1 + exp(−sensitivity · NPE))</div>
+</div>
+
+<div class="term">
+<div class="term-name">Engagement<span class="term-en">参与度</span></div>
+<div class="term-desc">Agent 唯一能观测到的信号。由文档吸引力和满意度共同决定：</div>
+<div class="formula">μ = (clickbait · choc_mean + (1−clickbait) · kale_mean) × satisfaction<br>engagement = exp(N(μ, σ²))</div>
+<div class="term-desc" style="margin-top:2px"><code>choc_mean</code>(5.0) > <code>kale_mean</code>(4.0)，clickbait 短期 engagement 更高但会降低 satisfaction。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Memory Discount (γ)<span class="term-en">记忆衰减因子</span></div>
+<div class="term-desc">默认 0.7。控制用户遗忘速度。越高则过去体验影响越持久。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Sensitivity<span class="term-en">敏感度</span></div>
+<div class="term-desc">满意度公式中的系数。越高则 NPE 微小变化就引起满意度剧烈波动。</div>
+</div>
+
+</div></div>
+
+<!-- ============ 7. IE ============ -->
+<div class="section" id="sec7">
+<div class="section-title"><span class="icon">🔄</span>7. Interest Evolution 环境</div>
+<div class="section-body">
+
+<div class="highlight">核心特点：用户兴趣<strong>可观测</strong>且会随推荐内容<strong>动态漂移</strong>。好策略要利用已知兴趣做精准推荐，同时推高质量内容延长会话。</div>
+
+<div class="term">
+<div class="term-name">User Interests<span class="term-en">用户兴趣向量</span></div>
+<div class="term-desc">20 维向量，每维表示对一个主题的偏好 ∈ [-1,1]。+1=非常感兴趣，-1=厌恶。此环境中 Agent <strong>能看到</strong>此向量。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Interest Drift<span class="term-en">兴趣漂移</span></div>
+<div class="term-desc">观看文档后，兴趣以一定概率向文档特征靠近或远离。越强的兴趣越不容易改变（α 随 |interests| 减小）。</div>
+<div class="formula">α(x) = (−y_int / x_int) · |x| + y_int<br>Δinterests = α · mask · (doc_features − interests)</div>
+<div class="term-desc" style="margin-top:2px">类比：铁杆球迷不会因看一个烹饪视频就不喜欢足球，但对烹饪中性的人可能因此产生兴趣。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Utility<span class="term-en">效用</span></div>
+<div class="term-desc">用户从观看文档中获得的综合价值。高效用推荐<strong>延长会话</strong>（补回时间预算），低效用加速用户离开。</div>
+<div class="formula">utility = user_quality_factor × expected_utility + doc_quality_factor × doc_quality<br>budget += α_update × watch_time × utility</div>
+</div>
+
+<div class="term">
+<div class="term-name">Cluster ID<span class="term-en">聚类 ID</span></div>
+<div class="term-desc">每个文档属于 20 个主题聚类之一，特征为 one-hot 编码。用于聚合分析各主题推荐效果。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Watch Time<span class="term-en">观看时长</span></div>
+<div class="term-desc"><code>min(time_budget, video_length)</code>。是 reward（<code>clicked_watchtime_reward</code>）的直接来源。</div>
+</div>
+
+</div></div>
+
+<!-- ============ 8. IEx ============ -->
+<div class="section" id="sec8">
+<div class="section-title"><span class="icon">🔍</span>8. Interest Exploration 环境</div>
+<div class="section-body">
+
+<div class="highlight">核心特点：用户兴趣是<strong>隐变量</strong>且<strong>不随时间变化</strong>。本质是多臂赌博机问题，考察 Agent 能否通过探索发现用户真正偏好。</div>
+
+<div class="term">
+<div class="term-name">User Type<span class="term-en">用户类型</span></div>
+<div class="term-desc">用户分为 N 种类型，每种对不同主题有不同偏好模式。Agent 只能看到类型 ID，看不到具体偏好值。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Production Quality<span class="term-en">制作质量 f<sub>D</sub>(d)</span></div>
+<div class="term-desc">文档的固有质量，与用户无关。高制作质量的文档在<strong>所有</strong>用户中点击率都较高。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Affinity<span class="term-en">亲和度</span></div>
+<div class="term-desc">用户对文档的最终偏好，两部分组成：</div>
+<div class="formula">affinity = g<sub>U</sub>(u,d) + f<sub>D</sub>(d) = 用户个人偏好 + 文档制作质量</div>
+</div>
+
+<div class="term">
+<div class="term-name">Popularity Bias<span class="term-en">流行度偏差</span></div>
+<div class="term-desc">短视策略偏向推荐高制作质量的大众主题（对所有用户点击率都不低），忽略小众但用户真正感兴趣的主题。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Correlated Bandits<span class="term-en">相关臂赌博机</span></div>
+<div class="term-desc">不同主题的 reward 是相关的（共享制作质量这个混淆因素）。需要比标准 UCB1 更精细的探索策略来去除混淆。</div>
+</div>
+
+</div></div>
+
+<!-- ============ 9. Agent ============ -->
+<div class="section" id="sec9">
+<div class="section-title"><span class="icon">🤖</span>9. Agent 与算法</div>
+<div class="section-body">
+
+<table>
+<tr><th>Agent</th><th>策略</th><th>适用场景</th></tr>
+<tr><td><strong>Random</strong></td><td>随机选文档</td><td>最弱基线</td></tr>
+<tr><td><strong>Greedy pCTR</strong></td><td>按预测点击率排序选 top-K</td><td>短视基线，只看即时 CTR</td></tr>
+<tr><td><strong>TabularQ</strong></td><td>离散化状态空间的 Q-learning</td><td>小规模问题</td></tr>
+<tr><td><strong>FullSlateQ</strong></td><td>整个 slate 作为一个动作，DQN</td><td>组合爆炸，仅适用于小 slate</td></tr>
+<tr><td><strong>SlateDecompQ</strong></td><td>分解 slate Q 值为单文档 Q 值之和</td><td><strong>论文重点</strong>，O(N) 复杂度</td></tr>
+<tr><td><strong>UCB1</strong></td><td>置信上界，自动平衡探索/利用</td><td>Bandit 问题(IEx)</td></tr>
+<tr><td><strong>ClusterBandit</strong></td><td>UCB1 在文档聚类上的应用</td><td>聚类级别的探索</td></tr>
+</table>
+
+<div class="term">
+<div class="term-name">UCB1 公式</div>
+<div class="formula">UCB(a) = 平均reward + √(2 · ln(总次数) / 该臂被拉次数)</div>
+<div class="term-desc">被拉次数少 → 不确定性大 → 置信上界高 → 值得探索。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Hierarchical Agent Layers<span class="term-en">分层 Agent</span></div>
+<div class="term-desc">类似 Keras layer 的可堆叠设计。<strong>特征工程层</strong>（TemporalAggregation、FixedLengthHistory）+ <strong>算法层</strong>（TabularQ、DQN），可独立替换。</div>
+</div>
+
+</div></div>
+
+<!-- ============ 10. 外部工具 ============ -->
+<div class="section" id="sec10">
+<div class="section-title"><span class="icon">🔧</span>10. 外部基准与工具</div>
+<div class="section-body">
+
+<div class="term">
+<div class="term-name">Atari<span class="term-en">街机游戏模拟器</span></div>
+<div class="term-desc">RL 经典基准。输入=游戏画面(像素)，输出=手柄操作。DeepMind 2013 年 DQN 在此达到人类水平。代表：Breakout、Pong、Space Invaders。</div>
+</div>
+
+<div class="term">
+<div class="term-name">MuJoCo<span class="term-en">Multi-Joint dynamics with Contact</span></div>
+<div class="term-desc">物理仿真引擎，模拟机器人关节运动。Agent 控制力矩完成走路/跑步/抓取。代表：HalfCheetah、Humanoid、Ant。</div>
+</div>
+
+<div class="term">
+<div class="term-name">为什么推荐系统不能用 Atari / MuJoCo</div>
+<div class="term-desc">
+<table>
+<tr><th>特性</th><th>Atari / MuJoCo</th><th>推荐系统</th></tr>
+<tr><td>动作空间</td><td>固定几个按键/力矩</td><td>C(N,K) 组合爆炸</td></tr>
+<tr><td>候选集</td><td>不变</td><td>每步有新内容上线/下架</td></tr>
+<tr><td>用户状态</td><td>完全可观测</td><td>兴趣/满意度是隐变量</td></tr>
+<tr><td>目标</td><td>单一得分</td><td>多目标(CTR+时长+满意度)</td></tr>
+</table>
+</div>
+</div>
+
+<div class="term">
+<div class="term-name">OpenAI Gym</div>
+<div class="term-desc">RL 环境标准接口：<code>reset()</code>、<code>step(action)</code>、<code>observation_space</code>、<code>action_space</code>。RecSim 通过 <code>RecSimGymEnv</code> 适配。</div>
+</div>
+
+<div class="term">
+<div class="term-name">Dopamine</div>
+<div class="term-desc">Google 的 RL 研究框架，提供 DQN 等参考实现。RecSim 的 FullSlateQ 和 SlateDecompQ 基于此。</div>
+</div>
+
+<div class="term">
+<div class="term-name">TensorFlow</div>
+<div class="term-desc">Google 深度学习框架。RecSim 原始代码基于 TF 1.x，本项目已适配 TF 2.x（将 <code>import gin.tf</code> 改为 <code>import gin</code>）。</div>
+</div>
+
+</div></div>
+
+</div>
+</body>
+</html>
